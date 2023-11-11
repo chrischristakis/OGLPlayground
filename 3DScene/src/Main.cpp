@@ -6,7 +6,20 @@
 #include <string>
 #include <glm/mat4x4.hpp>
 #include <glm/gtc/matrix_transform.hpp>
-#include <glm/gtx/string_cast.hpp>
+#include "Camera.h"
+
+Camera camera(glm::vec3(0,0,0), glm::vec3(0, 1, 0), glm::vec3(0,0,-1));
+
+void key_callback(GLFWwindow* window, int key, int scancode, int action, int mods)
+{
+    if (key == GLFW_KEY_ESCAPE && action == GLFW_PRESS)
+        glfwSetWindowShouldClose(window, true);
+}
+
+void mouse_callback(GLFWwindow* window, double xpos, double ypos)
+{
+    camera.mouseCallback(window, xpos, ypos);
+}
 
 unsigned int loadShader(const char* path, GLenum shaderType) {
     std::ifstream stream(path);
@@ -48,7 +61,7 @@ int main(void)
         return -1;
     }
 
-    window = glfwCreateWindow(900, 500, "Window", NULL, NULL);
+    window = glfwCreateWindow(900, 800, "Window", NULL, NULL);
     if (!window)
     {
         glfwTerminate();
@@ -56,6 +69,9 @@ int main(void)
     }
 
     glfwMakeContextCurrent(window);
+    glfwSetCursorPosCallback(window, mouse_callback);
+    glfwSetKeyCallback(window, key_callback);
+    glfwSetInputMode(window, GLFW_CURSOR, GLFW_CURSOR_DISABLED);
 
     /* Make sure to initialize GLAD after context has been set */
     if (!gladLoadGLLoader((GLADloadproc)glfwGetProcAddress))
@@ -65,7 +81,6 @@ int main(void)
     }
 
     std::cout << "OpenGL version: " << glGetString(GL_VERSION) << std::endl;
-    glViewport(0, 0, 900, 500);
 
     // Load our shaders into a program
     unsigned int vertShader = loadShader("shaders/triangle.vert", GL_VERTEX_SHADER);
@@ -89,11 +104,43 @@ int main(void)
 
     // Initialize buffers
 
-    float data[] = {
-        // POS                // COLOR
-        -0.5f, -0.5f,  1.0f,   0.0f, 0.0f, 1.0f,
-         0.0f,  0.5f,  1.0f,   0.0f, 1.0f, 0.0f,
-         0.5f, -0.5f,  1.0f,   1.0f, 0.0f, 0.0f,
+    const float data[] = {
+        -1.0f,-1.0f,-1.0f, // triangle 1 : begin
+        -1.0f,-1.0f, 1.0f,
+        -1.0f, 1.0f, 1.0f, // triangle 1 : end
+        1.0f, 1.0f,-1.0f, // triangle 2 : begin
+        -1.0f,-1.0f,-1.0f,
+        -1.0f, 1.0f,-1.0f, // triangle 2 : end
+        1.0f,-1.0f, 1.0f,
+        -1.0f,-1.0f,-1.0f,
+        1.0f,-1.0f,-1.0f,
+        1.0f, 1.0f,-1.0f,
+        1.0f,-1.0f,-1.0f,
+        -1.0f,-1.0f,-1.0f,
+        -1.0f,-1.0f,-1.0f,
+        -1.0f, 1.0f, 1.0f,
+        -1.0f, 1.0f,-1.0f,
+        1.0f,-1.0f, 1.0f,
+        -1.0f,-1.0f, 1.0f,
+        -1.0f,-1.0f,-1.0f,
+        -1.0f, 1.0f, 1.0f,
+        -1.0f,-1.0f, 1.0f,
+        1.0f,-1.0f, 1.0f,
+        1.0f, 1.0f, 1.0f,
+        1.0f,-1.0f,-1.0f,
+        1.0f, 1.0f,-1.0f,
+        1.0f,-1.0f,-1.0f,
+        1.0f, 1.0f, 1.0f,
+        1.0f,-1.0f, 1.0f,
+        1.0f, 1.0f, 1.0f,
+        1.0f, 1.0f,-1.0f,
+        -1.0f, 1.0f,-1.0f,
+        1.0f, 1.0f, 1.0f,
+        -1.0f, 1.0f,-1.0f,
+        -1.0f, 1.0f, 1.0f,
+        1.0f, 1.0f, 1.0f,
+        -1.0f, 1.0f, 1.0f,
+        1.0f,-1.0f, 1.0f
     };
 
     unsigned int VBO, VAO;
@@ -105,20 +152,20 @@ int main(void)
     glBindVertexArray(VAO);
 
     // Position
-    glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, 6 * sizeof(float), (void*)0);
+    glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, 0, (void*)0);
     glEnableVertexAttribArray(0);
-
-    // Colour
-    glVertexAttribPointer(1, 3, GL_FLOAT, GL_FALSE, 6 * sizeof(float), (void*)(3 * sizeof(float)));
-    glEnableVertexAttribArray(1);
 
     glBindBuffer(GL_ARRAY_BUFFER, 0);
     glBindVertexArray(0);
+
+    glm::mat4 projection = glm::perspective(45.0f, (GLfloat)900 / (GLfloat)800, 1.0f, 150.0f);
+    glm::mat4 model = glm::translate(glm::mat4(1.0f), glm::vec3(0, 0, -5.0f));
 
     // Render loop
     while (!glfwWindowShouldClose(window))
     {
         glfwPollEvents();
+        camera.update(window);
 
         glClearColor(0.1f, 0.15f, 0.2f, 1.0f);
         glClear(GL_COLOR_BUFFER_BIT);
@@ -126,7 +173,11 @@ int main(void)
         // Rendering here
         glBindVertexArray(VAO);
         glUseProgram(shaderProgram);
-        glDrawArrays(GL_TRIANGLES, 0, 3);
+
+        glm::mat4 mvp = projection * camera.getViewMatrix() * model;
+        glUniformMatrix4fv(glGetUniformLocation(shaderProgram, "mvp"), 1, GL_FALSE, &mvp[0][0]);
+
+        glDrawArrays(GL_TRIANGLES, 0, sizeof(data)/sizeof(float));
 
         glfwSwapBuffers(window);
     }
