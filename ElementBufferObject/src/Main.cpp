@@ -35,10 +35,10 @@ int main(void)
 
 
     float data[] = {
-        -1.0f, -1.0f, //BL
-         1.0f,  1.0f, //TR
-        -1.0f,  1.0f, //TL
-         1.0f, -1.0f, //BR
+        -0.5f, -0.5f, //BL
+         0.5f,  0.5f, //TR
+        -0.5f,  0.5f, //TL
+         0.5f, -0.5f, //BR
     };
 
     unsigned char indices[] = {
@@ -64,8 +64,7 @@ int main(void)
 
     glBindVertexArray(0);
     glBindBuffer(GL_ARRAY_BUFFER, 0);
-    glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, 0);
-
+    glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, 0); 
     // Create our shaders
     unsigned int vertexShader = Shaders::createShader(GL_VERTEX_SHADER, "shaders/shader.vert");
     unsigned int fragmentShader = Shaders::createShader(GL_FRAGMENT_SHADER, "shaders/shader.frag");
