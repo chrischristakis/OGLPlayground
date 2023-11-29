@@ -14,12 +14,17 @@
 
 const int WIDTH = 1200, HEIGHT = 1000;
 Camera camera(glm::vec3(0, 0.2f, 2.5f), glm::vec3(0, 1, 0));
+bool wireframe = false;
 
 // ------------------- CALLBACKS -------------------
 void key_callback(GLFWwindow* window, int key, int scancode, int action, int mods)
 {
     if (key == GLFW_KEY_ESCAPE && action == GLFW_PRESS)
         glfwSetWindowShouldClose(window, true);
+    if (key == GLFW_KEY_TAB && action == GLFW_PRESS) {
+        glPolygonMode(GL_FRONT_AND_BACK, wireframe? GL_LINE : GL_FILL);
+        wireframe = !wireframe;
+    }
 }
 
 void mouse_callback(GLFWwindow* window, double xpos, double ypos)
@@ -60,7 +65,7 @@ int main(void)
     glEnable(GL_DEPTH_TEST);
 
     //  ---------------------- MODEL LOADING STUFF ----------------------
-    Model model("assets/backpack/backpack.obj");
+    Model backpackModel("assets/backpack/backpack.obj");
     // ------------------------------------------------------------------ 
 
     unsigned int vShader = Shaders::createShader(GL_VERTEX_SHADER, "shaders/model.vert");
@@ -71,21 +76,29 @@ int main(void)
 
     glm::mat4 projection = glm::perspective(45.0f, (float)WIDTH / (float)HEIGHT, 0.1f, 50.0f);
 
+    glm::vec3 lightDir = glm::vec3(-0.2f, -1.0f, -0.3f);
+    glm::vec3 lightColor = glm::vec3(0.5f, 0.68f, 0.65f);
+
     // Render loop
     while (!glfwWindowShouldClose(window))
     {
         glfwPollEvents();
 
-        glClearColor(0.06f, 0.07f, 0.08f, 1.0f);
+        glClearColor(0.02f, 0.02f, 0.02f, 1.0f);
         glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
 
         // Set view matrix
         camera.update(window);
 
-        glm::mat4 mvp = projection * camera.getViewMatrix();
+        glm::mat4 model = glm::mat4(1.0f);
+        glm::mat4 mvp = projection * camera.getViewMatrix() * model;
         glUseProgram(program);
         glUniformMatrix4fv(glGetUniformLocation(program, "mvp"), 1, GL_FALSE, &mvp[0][0]);
-        model.draw(program);
+        glUniformMatrix4fv(glGetUniformLocation(program, "model"), 1, GL_FALSE, &model[0][0]);
+        glUniform3fv(glGetUniformLocation(program, "lightDir"), 1, &lightDir[0]);
+        glUniform3fv(glGetUniformLocation(program, "viewPos"), 1, &camera.position[0]);
+        glUniform3fv(glGetUniformLocation(program, "lightColor"), 1, &lightColor[0]);
+        backpackModel.draw(program);
 
         glfwSwapBuffers(window);
     }
