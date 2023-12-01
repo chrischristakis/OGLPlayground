@@ -15,6 +15,7 @@ uniform vec3 lightColor;
 out vec4 fragCol;
 
 void main() {
+
 	// Texture colours at our fragment
 	vec3 diffuseTex = texture(diffuse_texture1, uv).rgb;
 	vec3 specularTex = texture(specular_texture1, uv).rgb;
